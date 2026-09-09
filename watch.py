@@ -35,6 +35,11 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 # minutes before auction close to send a "closing soon" alert
 CLOSING_ALERT_MINUTES = int(os.environ.get("CLOSING_ALERT_MINUTES", "30"))
 
+# Fallback end time (JST, format: '2026年9月10日 11:57') used when the live
+# page doesn't expose it to a plain HTTP fetch (it's often loaded in by
+# client-side JS after page load, invisible to a non-browser request).
+KNOWN_END_TIME = os.environ.get("KNOWN_END_TIME", "").strip() or None
+
 JST = timezone(timedelta(hours=9))
 
 HEADERS = {
@@ -192,8 +197,14 @@ def main() -> None:
             # produce a matching display string in JST for consistency
             end_time = end_dt.astimezone(JST).strftime("%Y年%-m月%-d日 %H:%M")
 
+    if end_dt is None and KNOWN_END_TIME:
+        # last resort: use the manually-configured known end time
+        end_dt = parse_end_datetime(KNOWN_END_TIME)
+        if end_dt is not None:
+            end_time = KNOWN_END_TIME
+
     if end_dt is None:
-        print("Could not find an end time on the page (neither label nor JSON match).")
+        print("Could not find an end time on the page (neither label, JSON, nor KNOWN_END_TIME).")
 
     remaining = (end_dt - datetime.now(timezone.utc)) if end_dt else None
     timer_str = format_remaining(remaining) if remaining is not None else "unknown"
