@@ -1,8 +1,8 @@
 {
-  "price": 5000,
+  "price": 6000,
   "end_time": "2026年9月10日 20:57",
   "title": "ヴァンガードd SweetLinker フラティ LSR仕様 by メルカリ",
   "gone_alert_sent": false,
-  "closing_alert_sent": false,
+  "closing_alert_sent": true,
   "telegram_offset": 973441230
 }
