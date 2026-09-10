@@ -168,6 +168,13 @@ def send_telegram(message: str) -> None:
 
 
 def main() -> None:
+    run_check()
+
+
+def run_check(force_status: bool = False) -> None:
+    """Fetch the item, compare to last known state, and send alerts as needed.
+    If force_status is True, always sends a status message (used by the
+    /refresh command), even if nothing changed."""
     html = fetch_page(ITEM_URL)
 
     price = parse_price(html)
@@ -177,14 +184,14 @@ def main() -> None:
     if price is None:
         print("Could not parse price from page — item may be sold/removed.")
         state = load_state()
-        if not state.get("gone_alert_sent"):
+        if force_status or not state.get("gone_alert_sent"):
             send_telegram(
                 f"⚠️ Could not find a price on the watched item.\n"
                 f"It may have sold or been removed.\n{ITEM_URL}"
             )
             state["gone_alert_sent"] = True
             save_state(state)
-        sys.exit(0)
+        return
 
     state = load_state()
     last_price = state.get("price")
@@ -211,7 +218,12 @@ def main() -> None:
 
     print(f"Current price: ¥{price} | last known: {last_price} | end: {end_time} | {timer_str}")
 
-    if last_price is None:
+    if force_status:
+        send_telegram(
+            f"🔄 Status:\n<b>{title}</b>\nCurrent price: ¥{price}\n"
+            f"Ends: {end_time or 'unknown'} ({timer_str})\n{ITEM_URL}"
+        )
+    elif last_price is None:
         # first run — just record it, no alert
         send_telegram(
             f"👀 Now watching:\n<b>{title}</b>\nCurrent price: ¥{price}\n"
